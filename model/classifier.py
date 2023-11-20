@@ -15,6 +15,4 @@ class Classifier(nn.Module):
         out = self.relu(out)
         out = self.fc2(out)
         out = self.softmax(out)
-        # use argmax to get the predicted class
-        _, out = torch.max(out, dim=1)
         return out
