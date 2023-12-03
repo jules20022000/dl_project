@@ -78,7 +78,9 @@ model.eval()
 # ]
 
 text1 = speech_to_text()
+print("You said : {}".format(text1))
 text2 = speech_to_text()
+print("You said : {}".format(text2))
 texts = [text1, text2]
 
 labels = list(range(25))
