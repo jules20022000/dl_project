@@ -145,9 +145,8 @@ test_dataset = AudioDataset(test_files, test_labels, feature_extractor, max_seq_
 
 batch_size = 5
 epochs = 10
-
-# !! Note we use the test to train 
-train_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+ 
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
