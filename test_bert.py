@@ -15,7 +15,7 @@ model_name = "bert-large-uncased"
 tokenizer = BertTokenizer.from_pretrained(model_name)
 model = BertForSequenceClassification.from_pretrained(model_name, num_labels=len(prompt_to_id)).to(device)
 
-model_path = "./bert_model_large.pt"
+model_path = "./trained_models/bert_large.pt"
 model.load_state_dict(torch.load(model_path))
 # Assuming you have a trained model stored in the variable 'model'
 model.eval()

@@ -46,7 +46,6 @@ def train_model(train_loader, val_loader, model, criterion, optimizer, num_epoch
         for i, (inputs, mask, labels) in enumerate(train_loader):
             # Send inputs and labels to the device
             optimizer.zero_grad()
-            
             outputs = model(inputs, attention_mask=mask, labels=labels)
 
             loss = outputs.loss
@@ -54,8 +53,8 @@ def train_model(train_loader, val_loader, model, criterion, optimizer, num_epoch
             optimizer.step()
 
             running_loss += loss.item()
-            
-            print(f'Batch {i+1}/{len(train_loader)} Tr. Loss: {loss.item():.4f}', end='\r')
+            if i % 10 == 0:
+                print(f'Batch {i+1}/{len(train_loader)} Tr. Loss: {loss.item():.4f}', end='\r')
             
         tr_losses.append(running_loss / len(train_loader))
         # Validate the model
@@ -100,7 +99,9 @@ def test_model(test_loader, model):
             correct_predictions += (predicted == labels).sum().item()
             
     accuracy = correct_predictions / len(test_loader.dataset)
-    print(f'Test Loss: {running_loss / len(test_loader)} Accuracy: {accuracy * 100:.2f}%')
+    test_loss = running_loss / len(test_loader)
+    print(f'Test Loss: {test_loss} Accuracy: {accuracy * 100:.2f}%')
+    return test_loss, accuracy
     
 class AudioDataset(Dataset):
     def __init__(self, file_paths, labels, feature_extractor, max_seq_length):
@@ -130,12 +131,13 @@ class AudioDataset(Dataset):
         label = torch.tensor(label, dtype=torch.long).to(device)
 
         return input_values, attention_mask, label
-    
+
+        
 # Load pre-trained Hubert model and feature extractor
 feature_extractor = AutoFeatureExtractor.from_pretrained("superb/hubert-base-superb-ks")
 model = HubertForSequenceClassification.from_pretrained("superb/hubert-base-superb-ks", num_labels=len(prompt_to_id), ignore_mismatched_sizes=True).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=1e-5)
+optimizer = optim.AdamW(model.parameters(), lr=1e-4)
 
 max_seq_length = 295730
 
@@ -145,7 +147,7 @@ test_dataset = AudioDataset(test_files, test_labels, feature_extractor, max_seq_
 
 batch_size = 5
 epochs = 10
- 
+
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -163,5 +165,7 @@ np.save('./results/hubert/val_losses.npy', np.array(val_losses))
 np.save('./results/hubert/val_accs.npy', np.array(val_accs))
 
 # Test the model
-test_model(test_loader, model)
+test_loss, test_acc = test_model(test_loader, model)
+np.save('./results/hubert/test_loss.npy', np.array(test_loss))
+np.save('./results/hubert/test_acc.npy', np.array(test_acc))
 

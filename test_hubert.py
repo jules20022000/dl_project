@@ -16,7 +16,7 @@ max_seq_length = 295730
 
 
 # Set the path to the saved model
-model_path = "./hubert.pt"
+model_path = "./trained_models/hubert.pt"
 
 # Load pre-trained Hubert model and feature extractor
 feature_extractor = AutoFeatureExtractor.from_pretrained("superb/hubert-base-superb-ks")
