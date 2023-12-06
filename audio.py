@@ -137,7 +137,7 @@ class AudioDataset(Dataset):
 feature_extractor = AutoFeatureExtractor.from_pretrained("superb/hubert-base-superb-ks")
 model = HubertForSequenceClassification.from_pretrained("superb/hubert-base-superb-ks", num_labels=len(prompt_to_id), ignore_mismatched_sizes=True).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=1e-4)
+optimizer = optim.AdamW(model.parameters(), lr=1e-5)
 
 max_seq_length = 295730
 
