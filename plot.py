@@ -5,6 +5,7 @@ import os
 bert_path = "./results/base_bert"
 large_bert_path = "./results/large_bert"
 hubert_path = "./results/hubert"
+embedding_path = "./results/embeddings"
 
 def plot_results(path):
     test_acc = np.load(os.path.join(path, "test_acc.npy"))
@@ -35,3 +36,4 @@ def plot_results(path):
 plot_results(bert_path)
 plot_results(large_bert_path)
 plot_results(hubert_path)
+plot_results(embedding_path)
