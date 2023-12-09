@@ -146,7 +146,7 @@ valid_dataset = AudioDataset(valid_files, valid_labels, feature_extractor, max_s
 test_dataset = AudioDataset(test_files, test_labels, feature_extractor, max_seq_length)
 
 batch_size = 5
-epochs = 10
+epochs = 15
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
