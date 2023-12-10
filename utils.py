@@ -1,7 +1,15 @@
 import os
+import wave
 import torch
+import pyttsx3
+import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import speech_recognition as sr
+from transformers import pipeline
 from torch.nn import functional as F
+from sklearn.metrics import confusion_matrix
+
 
 def load_embeddings(path):
     """
@@ -101,10 +109,17 @@ def test_classifier(classifier, test_embeddings, test_labels, device):
     with torch.no_grad():
         inputs, targets = test_embeddings.to(device), test_labels.to(device, dtype=torch.long)
         outputs = classifier(inputs)
-        test_acc = torch.mean((torch.argmax(outputs, dim=1) == targets).float()).item()
-        print(f'Test accuracy: {test_acc * 100:.2f}%')
+    
+    
+    test_acc = torch.mean((torch.argmax(outputs, dim=1) == targets).float()).item()
+    print(f'Test accuracy: {test_acc * 100:.2f}%')
 
-    return test_acc
+    # Move the tensor to the CPU before using it with confusion_matrix
+    outputs_cpu = torch.argmax(outputs.cpu(), dim=1)
+    
+    cm = confusion_matrix(targets.cpu(), outputs_cpu)
+
+    return test_acc, cm
 
 
 def train_transformer(model, optimizer, num_epochs, train_loader, val_loader, device):
@@ -183,4 +198,139 @@ def test_transformer(model, test_loader, device):
             
     test_acc = correct_predictions / len(test_loader.dataset)
     print(f'Test accuracy: {test_acc * 100:.2f}%')
-    return test_acc
+
+    # Move the tensor to the CPU before using it with confusion_matrix
+    cm = confusion_matrix(labels.cpu(), predicted.cpu())
+    
+    return test_acc, cm
+
+def test_conversion(phrases, predicted):
+    """
+    Calculate overall accuracy of the predicted phrases.
+    :param phrases: List of ground truth phrases
+    :param predicted: List of predicted phrases
+    :return: Overall accuracy as a percentage
+    """
+    total_phrases = len(phrases)
+    
+    # Ensure both lists have the same length
+    if total_phrases != len(predicted):
+        raise ValueError("Number of predicted phrases must match the number of ground truth phrases.")
+    
+    correct_phrases = sum(1 for phrase, pred in zip(phrases, predicted) if phrase.lower() == pred.lower())
+    
+    overall_accuracy = correct_phrases / total_phrases
+
+    return overall_accuracy
+
+
+def plot_model_performance(path, title):
+    """
+    Plot both loss and accuracy in two subplots side by side.
+    :param path: Path to the data files
+    """
+    # Load data
+    try:
+        train_losses = np.load(os.path.join(path, 'tr_losses.npy'))
+        valid_losses = np.load(os.path.join(path, 'val_losses.npy'))
+        valid_accs = np.load(os.path.join(path, 'val_accs.npy'))
+    except:
+        train_losses = None
+        valid_losses = None
+        valid_accs = None
+    test_acc = np.load(os.path.join(path, 'test_acc.npy'))
+    cm = np.load(os.path.join(path, 'cm.npy'))
+
+    # Create subplots with a specified figsize
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))  # Adjust the figsize as needed
+
+    # Plot losses with a wider subplot
+    if train_losses is not None and valid_losses is not None:
+        axes[0].plot(train_losses, label='Training loss')
+        axes[0].plot(valid_losses, label='Validation loss')
+        axes[0].set_title('Loss')
+        axes[0].set_ylabel('Loss')
+        axes[0].set_xlabel('Epoch')
+        axes[0].legend(frameon=False)
+    else:
+        axes[0].axis('off')
+
+    # Plot accuracies
+    if valid_accs is not None:
+        axes[1].plot(valid_accs, label='Validation accuracy')
+    axes[1].axhline(y=test_acc, color='g', linestyle='-', label='Test accuracy')
+    axes[1].set_title('Accuracy')
+    axes[1].set_ylabel('Accuracy')
+    axes[1].set_xlabel('Epoch')
+    axes[1].legend(frameon=False)
+
+    # Plot confusion matrix
+    im = axes[2].imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    axes[2].imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    axes[2].set_title('Confusion matrix')
+    axes[2].set_ylabel('True label')
+    axes[2].set_xlabel('Predicted label')
+
+    # Add colorbar
+    cbar = plt.colorbar(im, ax=axes[2])
+    cbar.set_label('Count', rotation=270, labelpad=15)
+
+    # Adjust layout and show the plot
+    fig.suptitle(title, fontsize=20)
+    plt.tight_layout()
+    plt.show()
+
+
+def speech_to_wav(file_path='sample.wav', sample_width=2, sample_rate=44100):
+    """
+    Record audio using the microphone and save it to a .wav file.
+    :param file_path: Path to save the .wav file
+    :param sample_width: Number of bytes per sample (1 for 8-bit, 2 for 16-bit, etc.)
+    :param sample_rate: Number of samples per second (e.g., 44100 Hz)
+    """
+    r = sr.Recognizer()
+
+    print("Recording...")
+
+    # Exception handling to handle
+    # exceptions at the runtime
+    try:
+        # use the microphone as source for input.
+        with sr.Microphone() as source2:
+            
+            # wait for a second to let the recognizer
+            # adjust the energy threshold based on
+            # the surrounding noise level 
+            r.adjust_for_ambient_noise(source2, duration=0.2)
+            
+            # listens for the user's input 
+            audio2 = r.listen(source2)
+
+            # save the audio data to a .wav file
+            with wave.open(file_path, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(sample_width)
+                wf.setframerate(sample_rate)
+                wf.writeframes(audio2.frame_data)
+
+            print(f"Recording saved as {file_path}")
+
+    except sr.RequestError as e:
+        print(f"Could not request results; {e}")
+
+    except sr.UnknownValueError:
+        print("Unknown error occurred")
+
+
+def transcribe_wav_to_text(file_path, asr_pipeline):
+    """
+    Transcribe the audio file to text using transformers library
+    :param file_path: Path to the audio file
+    :return: Text
+    """
+    transcriptions = asr_pipeline(file_path)
+
+    if transcriptions:
+        return transcriptions['text'].lower()
+    else:
+        return None

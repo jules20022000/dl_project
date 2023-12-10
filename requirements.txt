@@ -6,3 +6,9 @@ transformers
 pytorch
 ipywidgets
 librosa
+nbformat
+speechrecognition
+pyttsx3
+pyaudio
+wave
+ffmpeg-python
