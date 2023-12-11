@@ -110,7 +110,6 @@ def test_classifier(classifier, test_embeddings, test_labels, device):
         inputs, targets = test_embeddings.to(device), test_labels.to(device, dtype=torch.long)
         outputs = classifier(inputs)
     
-    
     test_acc = torch.mean((torch.argmax(outputs, dim=1) == targets).float()).item()
     print(f'Test accuracy: {test_acc * 100:.2f}%')
 
@@ -189,18 +188,23 @@ def test_transformer(model, test_loader, device):
     model.eval()
     correct_predictions = 0
 
+    all_labels = torch.tensor([], dtype=torch.long, device=device)
+    all_predicted = torch.tensor([], dtype=torch.long, device=device)
+
     with torch.no_grad():
         for inputs, mask, labels in test_loader:
 
             outputs = model(inputs, attention_mask=mask, labels=labels)
             predicted = torch.argmax(outputs.logits, dim=1)
             correct_predictions += (predicted == labels).sum().item()
+            all_labels = torch.cat((all_labels, labels), dim=0)
+            all_predicted = torch.cat((all_predicted, predicted), dim=0)
             
     test_acc = correct_predictions / len(test_loader.dataset)
     print(f'Test accuracy: {test_acc * 100:.2f}%')
 
     # Move the tensor to the CPU before using it with confusion_matrix
-    cm = confusion_matrix(labels.cpu(), predicted.cpu())
+    cm = confusion_matrix(all_labels.cpu(), all_predicted.cpu())
     
     return test_acc, cm
 
@@ -320,6 +324,41 @@ def speech_to_wav(file_path='sample.wav', sample_width=2, sample_rate=44100):
 
     except sr.UnknownValueError:
         print("Unknown error occurred")
+
+
+def speech_to_text():
+    """
+    Convert speech to text using the microphone.
+    :return: Text
+    """
+    r = sr.Recognizer()
+
+    print("Recording...")
+
+    # Exception handling to handle
+    # exceptions at the runtime
+    try:
+        # use the microphone as source for input.
+        with sr.Microphone() as source2:
+            
+            # wait for a second to let the recognizer
+            # adjust the energy threshold based on
+            # the surrounding noise level 
+            r.adjust_for_ambient_noise(source2, duration=0.2)
+            
+            # listens for the user's input 
+            audio2 = r.listen(source2)
+
+            # Using google speech recognition
+            text = r.recognize_google(audio2)
+            return text
+
+    except sr.RequestError as e:
+        print(f"Could not request results; {e}")
+
+    except sr.UnknownValueError:
+        print("Unknown error occurred")
+
 
 
 def transcribe_wav_to_text(file_path, asr_pipeline):
