@@ -32,10 +32,10 @@ data
 │   │   ├── file1.wav
 │   │   ├── file2.wav
 │   │   └── ...
-│   ├── validate
-│   │   ├── file1.wav
-│   │   ├── file2.wav
-│   │   └── ...
+│   └── validate
+│       ├── file1.wav
+│       ├── file2.wav
+│       └── ...
 └── overview-of-recordings.csv
 ```
 
