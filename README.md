@@ -18,6 +18,28 @@ This project employs deep learning techniques on the "Medical Speech, Transcript
 
 You can obtain the "Medical Speech, Transcription, and Intent" dataset [here](#). The dataset, totaling approximately 6GB, encompasses thousands of audio utterances related to common medical symptoms like "knee pain" or "headache." In total, it offers over 8 hours of aggregated audio content, with each utterance crafted by individual human contributors based on specific medical symptoms. This extensive collection of audio snippets serves as valuable training data for conversational agents in the medical field. After downloading, unzip the file and copy the content of one of the two folders inside the root directory into a "data" folder at the project's root. Note that the two subfolders contain identical content, so copying from either suffices.
 
+Here is how your `data` folder structure should appear:
+
+```
+data
+│
+├── recordings
+│   ├── train
+│   │   ├── file1.wav
+│   │   ├── file2.wav
+│   │   └── ...
+│   ├── test
+│   │   ├── file1.wav
+│   │   ├── file2.wav
+│   │   └── ...
+│   ├── validate
+│   │   ├── file1.wav
+│   │   ├── file2.wav
+│   │   └── ...
+└── overview-of-recordings.csv
+```
+
+
 ## Running the Code
 
 ### Install Python Libraries
