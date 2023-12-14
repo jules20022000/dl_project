@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Recorder</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <button id="startButton">Start Recording</button>
+    <button id="stopButton">Stop Recording</button>
+    <button id="transcribeButton">Transcribe</button>
+    <div id="transcriptionResult">
+        <p id="transcriptionText"></p>
+        <p id="predictionText"></p>
+    </div>
+    
+    <script>
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const transcribeButton = document.getElementById('transcribeButton');
+        
+
+        let audioChunks = [];
+
+        let mediaRecorder;
+
+        startButton.addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'recorded_audio.wav');
+
+                fetch('http://localhost:8000/record/stop', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error(error));
+
+                audioChunks = [];
+            };
+
+            mediaRecorder.start();
+            startButton.disabled = true;
+            stopButton.disabled = false;
+        });
+
+        stopButton.addEventListener('click', () => {
+            mediaRecorder.stop();
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        });
+
+        transcribeButton.addEventListener('click', async () => {
+            fetch('/transcribe')
+                .then(response => response.json())
+                .then(data => {
+                    const transcriptionText = document.getElementById('transcriptionText');
+                    const predictionText = document.getElementById('predictionText');
+
+                    transcriptionText.textContent = `Transcription: ${data.transcription}`;
+                    predictionText.textContent = `Prediction: ${data.prediction}`;
+                })
+                .catch(error => console.error(error));
+        });
+
+    </script>
+</body>
+</html>
